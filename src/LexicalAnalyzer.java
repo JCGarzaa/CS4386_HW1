@@ -65,7 +65,7 @@ public class LexicalAnalyzer {
                 index += 3;
             }
             // check for TypeReference (starts with an uppercase letter)
-            else if (Character.isLetter(c) && Character.isUpperCase(c)) {
+            else if (c >= 'A' && c <= 'Z') {
                 String typeReference = readTypeReference(line, index);
                 if (typeReference != null) {
                     if (isReservedWord(typeReference)) {
@@ -77,29 +77,42 @@ public class LexicalAnalyzer {
                     index += typeReference.length();
                 }
                 else {
-                    System.out.println("Error: Invalid type reference at index " + index);
                     successful_read = false;
-                    break;
+                    // skip to next whitespace or end of line
+                    while (index < line.length() && !Character.isWhitespace(line.charAt(index))) {
+                        index++;
+                    }
                 }
             }
             // check for identifier (starts with lowercase letter)
-            else if (Character.isLetter(c) && Character.isLowerCase(c)) {
+            else if (c >= 'a' && c <= 'z') {
                 String identifier = readIdentifier(line, index);
                 if (identifier != null) {
                     System.out.println("TOKEN: IDENTIFIER(\"" + identifier + "\")");
                     index += identifier.length();
                 }
                 else {
-                    System.out.println("Error: Invalid identifier at index " + index);
                     successful_read = false;
-                    break;
+                    // skip to next whitespace or end of line
+                    while (index < line.length() && !Character.isWhitespace(line.charAt(index))) {
+                        index++;
+                    }
                 }
             }
             // check for number (starts with a digit)
-            else if (Character.isDigit(c)) {
+            else if (c >= '0' && c <= '9') {
                 String number = readNumber(line, index);
-                System.out.println("TOKEN: NUMBER(" + number + ")");
-                index += number.length();
+                if (number != null) {
+                    System.out.println("TOKEN: NUMBER(" + number + ")");
+                    index += number.length();
+                }
+                else {
+                    successful_read = false;
+                    // skip to next whitespace or end of line
+                    while (index < line.length() && !Character.isWhitespace(line.charAt(index))) {
+                        index++;
+                    }
+                }
             }
             // check for range separator
             else if (isRangeSeparator(line, index)) {
@@ -112,7 +125,7 @@ public class LexicalAnalyzer {
                 index++;
             }
             else {
-                System.out.println("Error: Invalid token '" + c + "' at index " + index);
+                System.out.println("ERROR: Invalid token '" + c + "' at index " + index);
                 successful_read = false;
                 index++;
             }
@@ -128,13 +141,14 @@ public class LexicalAnalyzer {
             char cur = line.charAt(index);
 
             // valid chars: letter, digit, or hyphen
-            if (Character.isLetterOrDigit(cur)) {
+            if (isValidLetterOrDigit(cur)) {
                 typeReference.append(cur);
                 prevCharWasHypen = false;
             }
             else if (cur == '-') {
                 if (prevCharWasHypen) {
                     // two consecutive hyphens not allowed
+                    System.out.println("ERROR: 2 consecutive hyphens at index: " + index + " in line: " + line);
                     return null;
                 }
                 typeReference.append(cur);
@@ -148,6 +162,7 @@ public class LexicalAnalyzer {
 
         // check if last character is a hyphen (which is not allowed)
         if (typeReference.charAt(typeReference.length() - 1) == '-') {
+            System.out.println("ERROR: Last character is a hyphen in " + typeReference);
             return null;
         }
         return typeReference.toString();
@@ -160,12 +175,14 @@ public class LexicalAnalyzer {
 
         while (index < line.length()) {
             char cur = line.charAt(index);
-            if (Character.isLetterOrDigit(cur)) {
+            if (isValidLetterOrDigit(cur)) {
                 identifier.append(cur);
                 prevCharWasHyphen = false;
             }
             else if (cur == '-') {
                 if (prevCharWasHyphen) {
+                    // two consecutive hyphens not allowed
+                    System.out.println("ERROR: 2 consecutive hyphens at index: " + index + " in line: " + line);
                     return null;
                 }
                 identifier.append(cur);
@@ -186,6 +203,13 @@ public class LexicalAnalyzer {
 
     private static String readNumber(String line, int index) {
         StringBuilder number = new StringBuilder();
+
+        // check that first digit is not 0 (unless it's the only digit)
+        if (line.charAt(index) == '0' && index + 1 < line.length() && Character.isDigit(line.charAt(index+1))) {
+            System.out.println("ERROR: Number cannot start with 0 unless it is the only digit at index: " + index + " in line: " + line);
+            return null;
+        }
+
 
         while (index < line.length() && Character.isDigit(line.charAt(index))) {
             char cur = line.charAt(index++);
@@ -211,5 +235,12 @@ public class LexicalAnalyzer {
 
     private static boolean isReservedWord(String typeReference) {
         return RESERVED_WORDS.contains(typeReference);
+    }
+
+    private static boolean isValidLetterOrDigit(char c) {
+        // check if character is digit 0-9
+        if (c >= '0' && c <= '9') return true;
+        // check if character is letter a-z or A-Z
+        return ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'));
     }
 }
