@@ -208,7 +208,6 @@ public class LexicalAnalyzer {
             return null;
         }
 
-
         while (index < line.length() && Character.isDigit(line.charAt(index))) {
             char cur = line.charAt(index++);
             number.append(cur);
