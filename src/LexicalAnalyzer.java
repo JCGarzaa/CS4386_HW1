@@ -39,8 +39,6 @@ public class LexicalAnalyzer {
 
             if (successful_read) System.out.println("\nSUCCESS");
             else System.out.println("\nFAIL");
-
-
         } catch (IOException e) {
             successful_read = false;
             System.out.println("\nFAIL");
